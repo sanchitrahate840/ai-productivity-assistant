@@ -1,0 +1,11 @@
+.calendar-panel { margin-top: 24px; padding: 28px; border: 1px solid #e2e7f0; border-radius: 24px; background: #fff; box-shadow: 0 20px 60px rgba(23,32,51,.08); }
+.calendar-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.calendar-card { padding: 20px; border: 1px solid #e2e7f0; border-radius: 16px; }
+.calendar-card h3 { margin-top: 0; }
+.calendar-list { display: grid; gap: 10px; margin-top: 20px; }
+.calendar-list article { display: grid; gap: 5px; padding: 12px; border-radius: 10px; background: #f7f9fc; }
+.calendar-list span { color: #667085; font-size: 13px; }
+.calendar-list label { display: flex; align-items: center; gap: 8px; }
+.calendar-list label input { width: 18px; }
+.calendar-list .completed strong { text-decoration: line-through; color: #98a2b3; }
+@media (max-width: 800px) { .calendar-grid { grid-template-columns: 1fr; } }
