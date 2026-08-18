@@ -5,74 +5,18 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
-
 * { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-.app {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 32px;
-}
-
-.hero {
-  width: min(760px, 100%);
-  padding: 56px;
-  border: 1px solid #e2e7f0;
-  border-radius: 24px;
-  background: #ffffff;
-  box-shadow: 0 20px 60px rgba(23, 32, 51, 0.08);
-}
-
-.eyebrow {
-  margin: 0 0 16px;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-}
-
-h1 {
-  margin: 0;
-  max-width: 650px;
-  font-size: clamp(38px, 7vw, 64px);
-  line-height: 1.02;
-}
-
-.subtitle {
-  margin: 24px 0 36px;
-  color: #667085;
-  font-size: 18px;
-  line-height: 1.6;
-}
-
-.status-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 18px;
-  border-radius: 14px;
-  background: #f7f9fc;
-}
-
-.status-card p {
-  margin: 4px 0 0;
-  color: #667085;
-}
-
-.status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #16a34a;
-}
-
-@media (max-width: 600px) {
-  .app { padding: 16px; }
-  .hero { padding: 32px 24px; }
-}
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+.app { min-height: 100vh; display: grid; place-items: center; padding: 32px; }
+.hero { width: min(760px, 100%); padding: 56px; border: 1px solid #e2e7f0; border-radius: 24px; background: #fff; box-shadow: 0 20px 60px rgba(23,32,51,.08); }
+.eyebrow { margin: 0 0 16px; font-size: 12px; font-weight: 800; letter-spacing: .14em; }
+h1 { margin: 0; max-width: 650px; font-size: clamp(38px, 7vw, 64px); line-height: 1.02; }
+.subtitle { margin: 24px 0 36px; color: #667085; font-size: 18px; line-height: 1.6; }
+form { display: grid; gap: 18px; }
+label { display: grid; gap: 8px; font-size: 14px; font-weight: 700; }
+input { width: 100%; padding: 13px 14px; border: 1px solid #d9dee8; border-radius: 10px; font: inherit; outline: none; }
+input:focus { border-color: #667085; }
+.primary { border: 0; border-radius: 10px; padding: 13px 18px; background: #172033; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.link-button { margin-top: 18px; border: 0; background: transparent; color: #475467; font: inherit; cursor: pointer; }
+.error { margin: 0; color: #c1121f; font-size: 14px; }
+@media (max-width: 600px) { .app { padding: 16px; } .hero { padding: 32px 24px; } }
