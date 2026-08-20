@@ -17,7 +17,8 @@ router.post("/chat", async (req, res) => {
     ]);
 
     const context = { tasks: tasks.rows, notes: notes.rows };
-    const response = await fetch(`${process.env.AI_SERVICE_URL.replace(/\\/$/, "")}/chat`, {
+    const baseUrl = process.env.AI_SERVICE_URL.replace(/\/$/, "");
+    const response = await fetch(`${baseUrl}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(process.env.AI_SERVICE_TOKEN ? { "X-Service-Token": process.env.AI_SERVICE_TOKEN } : {}) },
       body: JSON.stringify({ message: message.trim(), history, context })
