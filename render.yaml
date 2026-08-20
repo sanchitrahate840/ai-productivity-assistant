@@ -1,0 +1,59 @@
+services:
+  - type: web
+    name: ai-productivity-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: backend
+    buildCommand: npm install
+    preDeployCommand: node src/migrate.js
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ai-productivity-db
+          property: connectionString
+      - key: CLIENT_URL
+        value: https://ai-productivity-frontend.onrender.com
+      - key: AI_SERVICE_URL
+        value: http://ai-productivity-ai:10000
+      - key: AI_SERVICE_TOKEN
+        generateValue: true
+
+  - type: web
+    name: ai-productivity-ai
+    runtime: python
+    plan: free
+    region: singapore
+    rootDir: ai-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 10000
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.6-luna
+      - key: AI_SERVICE_TOKEN
+        fromService:
+          type: web
+          name: ai-productivity-api
+          envVarKey: AI_SERVICE_TOKEN
+
+  - type: web
+    name: ai-productivity-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://ai-productivity-api.onrender.com/api
+
+databases:
+  - name: ai-productivity-db
+    plan: free
+    region: singapore
