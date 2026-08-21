@@ -20,15 +20,23 @@ router.post("/chat", async (req, res) => {
     const baseUrl = process.env.AI_SERVICE_URL.replace(/\/$/, "");
     const response = await fetch(`${baseUrl}/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...(process.env.AI_SERVICE_TOKEN ? { "X-Service-Token": process.env.AI_SERVICE_TOKEN } : {}) },
+      headers: {
+        "Content-Type": "application/json",
+        ...(process.env.AI_SERVICE_TOKEN ? { "X-Service-Token": process.env.AI_SERVICE_TOKEN } : {})
+      },
       body: JSON.stringify({ message: message.trim(), history, context })
     });
 
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) return res.status(response.status).json({ message: data.message || "AI service failed" });
+    if (!response.ok) {
+      const detail = data.detail || data.message || data.error || "AI service failed";
+      console.error("AI service error:", response.status, detail);
+      return res.status(response.status).json({ message: detail });
+    }
+
     res.json(data);
   } catch (error) {
-    console.error(error);
+    console.error("AI service request failed:", error);
     res.status(502).json({ message: "Unable to reach AI service" });
   }
 });
