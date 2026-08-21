@@ -4,7 +4,7 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
-app = FastAPI(title="AI Productivity Assistant Service", version="2.0.2")
+app = FastAPI(title="AI Productivity Assistant Service", version="2.0.3")
 
 
 class ChatRequest(BaseModel):
@@ -20,7 +20,11 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "ai-service", "configured": bool(getenv("OPENAI_API_KEY"))}
+    return {
+        "status": "ok",
+        "service": "ai-service",
+        "configured": bool(getenv("OPENAI_API_KEY")),
+    }
 
 
 @app.post("/chat")
@@ -55,15 +59,30 @@ async def chat(payload: ChatRequest, x_service_token: str | None = Header(defaul
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
                 },
-                json={"model": model, "input": prompt},
+                json={
+                    "model": model,
+                    "input": prompt,
+                },
             )
     except httpx.HTTPError as error:
-        raise HTTPException(status_code=502, detail="Unable to reach AI provider") from error
+        raise HTTPException(status_code=502, detail=f"Unable to reach AI provider: {error}") from error
 
     if response.status_code >= 400:
-        raise HTTPException(status_code=502, detail="AI provider request failed")
+        try:
+            provider_error = response.json().get("error", {})
+            detail = provider_error.get("message") or provider_error.get("code") or response.text
+        except Exception:
+            detail = response.text
+        raise HTTPException(
+            status_code=502,
+            detail=f"AI provider error ({response.status_code}): {detail[:500]}",
+        )
 
-    data = response.json()
+    try:
+        data = response.json()
+    except ValueError as error:
+        raise HTTPException(status_code=502, detail="AI provider returned invalid JSON") from error
+
     reply = data.get("output_text")
     if not reply:
         parts = []
