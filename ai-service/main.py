@@ -4,7 +4,7 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
-app = FastAPI(title="AI Productivity Assistant Service", version="3.0.0")
+app = FastAPI(title="AI Productivity Assistant Service", version="3.0.1")
 
 
 class ChatRequest(BaseModel):
@@ -25,6 +25,7 @@ def health():
         "service": "ai-service",
         "configured": bool(getenv("GROQ_API_KEY")),
         "provider": "groq",
+        "model": getenv("GROQ_MODEL", "llama-3.1-8b-instant"),
     }
 
 
@@ -38,7 +39,12 @@ async def chat(payload: ChatRequest, x_service_token: str | None = Header(defaul
     if not api_key:
         raise HTTPException(status_code=503, detail="GROQ_API_KEY is not configured")
 
-    model = getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    # Use the smaller production model by default. It is fast, inexpensive,
+    # and suitable for this productivity assistant. A user-provided
+    # GROQ_MODEL is still supported.
+    model = getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+    fallback_model = "llama-3.1-8b-instant"
+
     system = (
         "You are a practical personal productivity assistant. Be concise and actionable. "
         "Use the user's tasks and notes as context when relevant. Do not claim to have "
@@ -58,20 +64,30 @@ async def chat(payload: ChatRequest, x_service_token: str | None = Header(defaul
         },
     ]
 
-    try:
+    async def call_groq(selected_model: str):
         async with httpx.AsyncClient(timeout=45) as client:
-            response = await client.post(
+            return await client.post(
                 "https://api.groq.com/openai/v1/chat/completions",
                 headers={
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": model,
+                    "model": selected_model,
                     "messages": messages,
                     "temperature": 0.3,
                 },
             )
+
+    try:
+        response = await call_groq(model)
+
+        # Some Groq projects can have model restrictions. If the configured
+        # model is unavailable, automatically retry with a broadly available
+        # production model instead of making the whole app fail.
+        if response.status_code == 404 and model != fallback_model:
+            response = await call_groq(fallback_model)
+            model = fallback_model
     except httpx.HTTPError as error:
         raise HTTPException(status_code=502, detail=f"Unable to reach Groq: {error}") from error
 
@@ -96,4 +112,4 @@ async def chat(payload: ChatRequest, x_service_token: str | None = Header(defaul
     except (KeyError, IndexError, TypeError):
         reply = "I couldn't generate a response right now."
 
-    return {"reply": reply}
+    return {"reply": reply, "model": model}
