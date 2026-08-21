@@ -4,7 +4,7 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
-app = FastAPI(title="AI Productivity Assistant Service", version="2.0.3")
+app = FastAPI(title="AI Productivity Assistant Service", version="3.0.0")
 
 
 class ChatRequest(BaseModel):
@@ -23,7 +23,8 @@ def health():
     return {
         "status": "ok",
         "service": "ai-service",
-        "configured": bool(getenv("OPENAI_API_KEY")),
+        "configured": bool(getenv("GROQ_API_KEY")),
+        "provider": "groq",
     }
 
 
@@ -33,11 +34,11 @@ async def chat(payload: ChatRequest, x_service_token: str | None = Header(defaul
     if expected and x_service_token != expected:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    api_key = getenv("OPENAI_API_KEY")
+    api_key = getenv("GROQ_API_KEY")
     if not api_key:
-        raise HTTPException(status_code=503, detail="OPENAI_API_KEY is not configured")
+        raise HTTPException(status_code=503, detail="GROQ_API_KEY is not configured")
 
-    model = getenv("OPENAI_MODEL", "gpt-5-mini")
+    model = getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
     system = (
         "You are a practical personal productivity assistant. Be concise and actionable. "
         "Use the user's tasks and notes as context when relevant. Do not claim to have "
@@ -49,23 +50,30 @@ async def chat(payload: ChatRequest, x_service_token: str | None = Header(defaul
         f"{item.get('role', 'user')}: {item.get('content', '')}"
         for item in payload.history[-8:]
     )
-    prompt = f"{system}\n\n{context_text}\n\nConversation:\n{history_text}\nuser: {payload.message}"
+    messages = [
+        {"role": "system", "content": system},
+        {
+            "role": "user",
+            "content": f"{context_text}\n\nConversation:\n{history_text}\nuser: {payload.message}",
+        },
+    ]
 
     try:
         async with httpx.AsyncClient(timeout=45) as client:
             response = await client.post(
-                "https://api.openai.com/v1/responses",
+                "https://api.groq.com/openai/v1/chat/completions",
                 headers={
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
                 },
                 json={
                     "model": model,
-                    "input": prompt,
+                    "messages": messages,
+                    "temperature": 0.3,
                 },
             )
     except httpx.HTTPError as error:
-        raise HTTPException(status_code=502, detail=f"Unable to reach AI provider: {error}") from error
+        raise HTTPException(status_code=502, detail=f"Unable to reach Groq: {error}") from error
 
     if response.status_code >= 400:
         try:
@@ -75,22 +83,17 @@ async def chat(payload: ChatRequest, x_service_token: str | None = Header(defaul
             detail = response.text
         raise HTTPException(
             status_code=502,
-            detail=f"AI provider error ({response.status_code}): {detail[:500]}",
+            detail=f"Groq error ({response.status_code}): {detail[:500]}",
         )
 
     try:
         data = response.json()
     except ValueError as error:
-        raise HTTPException(status_code=502, detail="AI provider returned invalid JSON") from error
+        raise HTTPException(status_code=502, detail="Groq returned invalid JSON") from error
 
-    reply = data.get("output_text")
-    if not reply:
-        parts = []
-        for item in data.get("output", []):
-            for content in item.get("content", []):
-                text = content.get("text")
-                if text:
-                    parts.append(text)
-        reply = "\n".join(parts).strip()
+    try:
+        reply = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError):
+        reply = "I couldn't generate a response right now."
 
-    return {"reply": reply or "I couldn't generate a response right now."}
+    return {"reply": reply}
