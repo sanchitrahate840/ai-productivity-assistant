@@ -36,10 +36,10 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.13.5
-      - key: OPENAI_API_KEY
+      - key: GROQ_API_KEY
         sync: false
-      - key: OPENAI_MODEL
-        value: gpt-5-mini
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
       - key: AI_SERVICE_TOKEN
         fromService:
           type: web
