@@ -21,7 +21,7 @@ services:
       - key: CLIENT_URL
         value: "*"
       - key: AI_SERVICE_URL
-        value: http://ai-productivity-ai:10000
+        value: https://ai-productivity-ai.onrender.com
       - key: AI_SERVICE_TOKEN
         generateValue: true
 
